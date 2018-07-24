@@ -316,8 +316,9 @@ wms.Overlay = L.Layer.extend({
         'attribution': '',
         'opacity': 1,
         'isBack': false,
-        'minZoom': 0,
-        'maxZoom': 18
+        'minZoom': 12,
+        'maxZoom': 22,
+        'boundingBox': null
     },
 
     'initialize': function(url, options) {
@@ -380,9 +381,28 @@ wms.Overlay = L.Layer.extend({
         // Keep current image overlay in place until new one loads
         // (inspired by esri.leaflet)
         var bounds = this._map.getBounds();
-        var overlay = L.imageOverlay(url, bounds, {'opacity': 0});
-        overlay.addTo(this._map);
-        overlay.once('load', _swap, this);
+
+        var layerVisible = true;
+        if (this.options.boundingBox) {
+            if (!bounds.intersects(this.options.boundingBox)) layerVisible=false;
+        }
+        if(layerVisible) {
+            if (this._map.getZoom() < this.options.minZoom || this._map.getZoom() > this.options.maxZoom) layerVisible=false;
+        }
+        if (layerVisible) {
+            var overlay = L.imageOverlay(url, bounds, {opacity: 0});
+            overlay.addTo(this._map);
+            overlay.once("load", _swap, this);
+        }
+        else {
+            if (this._currentOverlay)
+                this._map.removeLayer(this._currentOverlay)
+        }
+
+        if (this._map.getZoom() < this.options.minZoom || this._map.getZoom() > this.options.maxZoom) {
+            this._map.removeLayer(overlay)
+        }
+
         function _swap() {
             if (!this._map) {
                 return;
@@ -403,10 +423,6 @@ wms.Overlay = L.Layer.extend({
             if (this.options.isBack === false) {
                 overlay.bringToFront();
             }
-        }
-        if ((this._map.getZoom() < this.options.minZoom) ||
-            (this._map.getZoom() > this.options.maxZoom)){
-            this._map.removeLayer(overlay);
         }
     },
 
