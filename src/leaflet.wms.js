@@ -400,6 +400,7 @@ wms.Overlay = L.Layer.extend({
         }
 
         if (this._map.getZoom() < this.options.minZoom || this._map.getZoom() > this.options.maxZoom) {
+			if(overlay)
             this._map.removeLayer(overlay)
         }
 
